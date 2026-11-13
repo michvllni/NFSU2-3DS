@@ -115,6 +115,26 @@ def probe(path):
     return "vp6", w, h, num, den, frames
 
 
+def stream_frames(path):
+    """The video frames a decoder gets: the MV0K / MV0F chunks before the
+    SCEl end chunk, where ffmpeg's electronicarts.c stops. In the US CD's
+    movies, 18 of the 29 have frames after SCEl that the MVhd count includes
+    (Scene01: 4545 in the header, 4471 before SCEl, then 74 of 140 bytes), so
+    the header alone can't be what the encode is checked against."""
+    with open(path, "rb") as f:
+        d = f.read()
+    p, n = 0, 0
+    while p + 8 <= len(d):
+        tag = d[p:p + 4]
+        size = struct.unpack_from("<I", d, p + 4)[0]
+        if tag == b"SCEl" or size < 8:
+            break
+        if tag in (b"MV0K", b"MV0F"):
+            n += 1
+        p += size
+    return n
+
+
 def encode(src, dst, crf, preset, ph):
     vf = ("scale=%d:%d:flags=lanczos+accurate_rnd,pad=%d:%d:0:0:black,format=yuv420p"
           % (PIC_W, ph, CODED_W, CODED_H))
@@ -272,7 +292,8 @@ def main():
         if name not in files:
             raise SystemExit("no %s.vp6 in %s" % (name, a.src))
         src = os.path.join(a.src, files[name])
-        codec, w, h, fnum, fden, nframes = probe(src)
+        codec, w, h, fnum, fden, hdr_frames = probe(src)
+        nframes = stream_frames(src)
         # The runtime's output name follows main.c's lowercase-or-real casing
         # for the .vp6 it pairs with; FMVOpening keeps its real capitalisation.
         out_name = "FMVOpening" if name == "fmvopening" else name
@@ -292,6 +313,9 @@ def main():
         line = ("%-12s %s %dx%d %d frames @ %.3f fps -> %s  %.2f MB (vp6 %.2f MB)  profile %d level %d"
                 % (name, codec, w, h, nframes, float(fps), os.path.relpath(dst, ROOT),
                    len(blob) / 1e6, os.path.getsize(src) / 1e6, sps[1], sps[3]))
+        if hdr_frames != nframes:
+            line += "  (header says %d; %d after the end chunk left out)" % (
+                hdr_frames, hdr_frames - nframes)
         if a.verify:
             info = verify(dst, nframes, a.preview)
             line += "  [verified: %s frames %sx%s b=%s]" % (
