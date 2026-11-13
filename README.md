@@ -103,6 +103,23 @@ python3 tools/stage.py --pc "<PC game folder>" --gamedir <SD>/nfsu2
 
 or, with a window, `tools/nfsu2_setup.pyw`.
 
+Or, with nothing installed but Docker or Podman, the repository's
+`Dockerfile` has all of it. From the repository's top folder:
+
+```
+podman build -t nfsu2-tools .
+podman run --rm -v "$PWD:/repo:z" -v "<PC game folder>:/pc:ro,z" \
+    -v "<SD>/nfsu2:/gamedir:z" nfsu2-tools
+```
+
+Run the same again to update the folder after updating the repository.
+Options after `nfsu2-tools` go to `stage.py` (`--list`, `--help`); the
+`Dockerfile` has the details, Docker's included.
+
+`compose.yaml` does the same in one step: put `NFSU2_PC=<PC game folder>`
+and `NFSU2_GAMEDIR=<SD>/nfsu2` in a `.env` file in the repository's top
+folder, then run `podman compose run --rm setup` (or `docker compose`).
+
 ## Controls
 
 ### Driving

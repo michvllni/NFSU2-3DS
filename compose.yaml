@@ -1,0 +1,28 @@
+# The data tools' container (see Dockerfile) with its folders filled in, so a
+# setup or update is one command. Set the two paths first, in a .env file
+# beside this one or in the environment:
+#
+#   NFSU2_PC=/path/to/the NFSU2 PC install      (the folder SPEED2.EXE is in)
+#   NFSU2_GAMEDIR=/path/to/SD card/nfsu2        (the game data folder)
+#
+# Then, from the repository's top folder:
+#
+#   podman compose run --rm setup            set up / update the game data
+#   podman compose run --rm setup --list     show what is out of date
+#   podman compose run --rm setup --help     every option
+#
+# (`docker compose` takes the same commands.) The first run builds the image.
+# Only what is missing or out of date is redone, so run it again after
+# updating the repository. With Docker, also set NFSU2_USER to "$(id -u):$(id -g)"
+# so the files it writes are yours; Podman's rootless containers need nothing.
+
+services:
+  setup:
+    build: .
+    image: nfsu2-tools
+    user: "${NFSU2_USER:-0:0}"
+    volumes:
+      # :z shares the SELinux label (Fedora and the like); elsewhere it does nothing.
+      - .:/repo:z
+      - "${NFSU2_PC:?set NFSU2_PC to the NFSU2 PC install}:/pc:ro,z"
+      - "${NFSU2_GAMEDIR:?set NFSU2_GAMEDIR to the game data folder}:/gamedir:z"

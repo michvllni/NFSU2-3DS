@@ -1,0 +1,4 @@
+# The image needs only dspenc's source; the tools are mounted at run time.
+# Keeping the rest out stops the build sending game files and ISOs as context.
+*
+!tools/src/dspenc.c

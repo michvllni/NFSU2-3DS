@@ -12,6 +12,9 @@
 !/README.md
 !/MODDING.md
 !/CHEAT_CODES.MD
+!/Dockerfile
+!/.dockerignore
+!/compose.yaml
 !/3DS Files/
 !/tools/
 !/docs/
